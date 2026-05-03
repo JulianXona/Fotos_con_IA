@@ -634,12 +634,44 @@
                     throw new Error(`Invalid JSON from upload: ${uploadText.substring(0, 200)}`);
                 }
                 
-                // Wait longer for Leonardo to process the uploaded image
                 console.log('Image uploaded, ID:', uploadData.imageId);
-                console.log('Waiting 10 seconds for image processing...');
-                await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second delay
                 
-                // Step 2: Create generation with uploaded image ID
+                // Step 2: Wait for image to be processed by Leonardo
+                console.log('Verifying image is ready...');
+                let imageReady = false;
+                let attempts = 0;
+                const maxAttempts = 30;
+                
+                while (!imageReady && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    const verifyResponse = await fetch('/api/replicate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'verify',
+                            imageId: uploadData.imageId
+                        })
+                    });
+
+                    const verifyData = await verifyResponse.json();
+                    console.log('Verify attempt', attempts + 1, ':', verifyData);
+                    
+                    if (verifyData.init_images_by_pk?.url) {
+                        imageReady = true;
+                        console.log('Image is ready!');
+                    }
+                    
+                    attempts++;
+                }
+                
+                if (!imageReady) {
+                    throw new Error('Image upload timeout');
+                }
+                
+                // Step 3: Create generation with uploaded image ID
                 const genResponse = await fetch('/api/replicate', {
                     method: 'POST',
                     headers: {
