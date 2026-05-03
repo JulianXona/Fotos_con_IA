@@ -634,9 +634,10 @@
                     throw new Error(`Invalid JSON from upload: ${uploadText.substring(0, 200)}`);
                 }
                 
-                // Wait for Leonardo to process the uploaded image
+                // Wait longer for Leonardo to process the uploaded image
                 console.log('Image uploaded, ID:', uploadData.imageId);
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                console.log('Waiting 10 seconds for image processing...');
+                await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second delay
                 
                 // Step 2: Create generation with uploaded image ID
                 const genResponse = await fetch('/api/replicate', {
