@@ -16,14 +16,57 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { action, imageBase64, generationId } = JSON.parse(event.body);
+    const { action, imageBase64, generationId, imageUrl } = JSON.parse(event.body);
     const apiKey = process.env.LEONARDO_API_KEY;
 
     if (!apiKey) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: 'Leonardo API key not configured' }) };
     }
 
-    // Create generation with image-to-image
+    // Step 1: Upload image to Leonardo
+    if (action === 'upload') {
+      // Request upload URL
+      const uploadRes = await fetch('https://cloud.leonardo.ai/api/rest/v1/init-image', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'authorization': `Bearer ${apiKey}`,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          extension: 'png'
+        })
+      });
+
+      const uploadData = await uploadRes.json();
+      
+      if (!uploadData.uploadInitImage) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      // Convert base64 to blob and upload
+      const base64Data = imageBase64.split(',')[1];
+      const binaryData = Buffer.from(base64Data, 'base64');
+      
+      await fetch(uploadData.uploadInitImage.url, {
+        method: 'PUT',
+        body: binaryData,
+        headers: {
+          'Content-Type': 'image/png'
+        }
+      });
+
+      return { 
+        statusCode: 200, 
+        headers, 
+        body: JSON.stringify({ 
+          imageId: uploadData.uploadInitImage.id,
+          fields: uploadData.uploadInitImage.fields 
+        }) 
+      };
+    }
+
+    // Step 2: Create generation with uploaded image
     if (action === 'create') {
       const res = await fetch('https://cloud.leonardo.ai/api/rest/v1/generations', {
         method: 'POST',
@@ -39,11 +82,8 @@ exports.handler = async (event) => {
           width: 1024,
           height: 1024,
           num_images: 1,
-          photoReal: false,
-          photoRealVersion: "v2",
-          presetStyle: "NONE",
-          init_image_base64: imageBase64,
-          init_strength: 0.3
+          init_image_id: imageUrl, // This is the ID from upload
+          init_strength: 0.35
         })
       });
 
@@ -51,7 +91,7 @@ exports.handler = async (event) => {
       return { statusCode: res.status, headers, body: JSON.stringify(data) };
     }
 
-    // Get generation result
+    // Step 3: Get generation result
     if (action === 'get' && generationId) {
       const res = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
         headers: {
