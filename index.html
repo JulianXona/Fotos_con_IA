@@ -609,7 +609,7 @@
 
             try {
                 // Step 1: Upload image to Leonardo
-                const uploadResponse = await fetch('/.netlify/functions/replicate', {
+                const uploadResponse = await fetch('/api/replicate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -620,19 +620,26 @@
                     })
                 });
 
+                const uploadText = await uploadResponse.text();
+                console.log('Upload response:', uploadText);
+
                 if (!uploadResponse.ok) {
-                    const errorData = await uploadResponse.json();
-                    throw new Error(errorData.error || 'Error subiendo imagen');
+                    throw new Error(`Upload failed: ${uploadText}`);
                 }
 
-                const uploadData = await uploadResponse.json();
+                let uploadData;
+                try {
+                    uploadData = JSON.parse(uploadText);
+                } catch (e) {
+                    throw new Error(`Invalid JSON from upload: ${uploadText.substring(0, 200)}`);
+                }
                 
                 // Wait for Leonardo to process the uploaded image
-                console.log('Image uploaded, waiting for processing...');
-                await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
+                console.log('Image uploaded, ID:', uploadData.imageId);
+                await new Promise(resolve => setTimeout(resolve, 3000));
                 
                 // Step 2: Create generation with uploaded image ID
-                const genResponse = await fetch('/.netlify/functions/replicate', {
+                const genResponse = await fetch('/api/replicate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -643,12 +650,20 @@
                     })
                 });
 
+                const genText = await genResponse.text();
+                console.log('Generation response:', genText);
+
                 if (!genResponse.ok) {
-                    const errorData = await genResponse.json();
-                    throw new Error(errorData.error || 'Error en generación');
+                    throw new Error(`Generation failed: ${genText}`);
                 }
 
-                const generation = await genResponse.json();
+                let generation;
+                try {
+                    generation = JSON.parse(genText);
+                } catch (e) {
+                    throw new Error(`Invalid JSON from generation: ${genText.substring(0, 200)}`);
+                }
+
                 const result = await pollLeonardo(generation.sdGenerationJob.generationId);
                 
                 // Add McDonald's frame overlay
@@ -671,7 +686,7 @@
             let attempts = 0;
 
             while (attempts < maxAttempts) {
-                const response = await fetch('/.netlify/functions/replicate', {
+                const response = await fetch('/api/replicate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -682,7 +697,8 @@
                     })
                 });
 
-                const data = await response.json();
+                const text = await response.text();
+                const data = JSON.parse(text);
                 const generation = data.generations_by_pk;
 
                 if (generation.status === 'COMPLETE' && generation.generated_images?.length > 0) {
