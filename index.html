@@ -627,6 +627,10 @@
 
                 const uploadData = await uploadResponse.json();
                 
+                // Wait for Leonardo to process the uploaded image
+                console.log('Image uploaded, waiting for processing...');
+                await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
+                
                 // Step 2: Create generation with uploaded image ID
                 const genResponse = await fetch('/.netlify/functions/replicate', {
                     method: 'POST',
