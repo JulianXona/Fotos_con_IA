@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { action, imageBase64, generationId, imageUrl } = req.body;
+    const { action, imageBase64, generationId, imageUrl, imageId } = req.body;
     const apiKey = process.env.LEONARDO_API_KEY;
 
     if (!apiKey) {
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       const base64Data = imageBase64.split(',')[1];
       const binaryData = Buffer.from(base64Data, 'base64');
       
-      await fetch(uploadData.uploadInitImage.url, {
+      const putRes = await fetch(uploadData.uploadInitImage.url, {
         method: 'PUT',
         body: binaryData,
         headers: {
@@ -53,10 +53,26 @@ export default async function handler(req, res) {
         }
       });
 
+      if (!putRes.ok) {
+        throw new Error('Failed to upload image to S3');
+      }
+
       return res.status(200).json({ 
-        imageId: uploadData.uploadInitImage.id,
-        fields: uploadData.uploadInitImage.fields 
+        imageId: uploadData.uploadInitImage.id
       });
+    }
+
+    // Step 1.5: Verify init image is ready
+    if (action === 'verify') {
+      const verifyRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/init-image/${imageId}`, {
+        headers: {
+          'accept': 'application/json',
+          'authorization': `Bearer ${apiKey}`
+        }
+      });
+
+      const data = await verifyRes.json();
+      return res.status(verifyRes.status).json(data);
     }
 
     // Step 2: Create generation with uploaded image
