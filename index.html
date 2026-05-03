@@ -514,15 +514,12 @@
                     </div>
                 </div>
                 
-                <div class="qr-container" style="margin-top: 20px;">
-                    <div class="qr-title">📱 ESCANEÁ PARA DESCARGAR</div>
-                    <div class="qr-subtitle">Apuntá tu cámara al código QR</div>
-                    <div id="qrcode"></div>
-                    <div class="download-hint">👆 Guardá tu foto oficial</div>
-                    <div class="timer" id="countdown"></div>
-                </div>
-
+                <button class="btn btn-primary" onclick="printImage()" style="margin-top: 20px;">
+                    🖨️ IMPRIMIR FOTO
+                </button>
                 <button class="btn btn-secondary" onclick="resetApp()">HACER OTRA FOTO</button>
+                
+                <div class="timer" id="countdown" style="text-align: center; margin-top: 15px;"></div>
             </div>
 
             <!-- Error Display -->
@@ -664,7 +661,6 @@
                 document.getElementById('resultScreen').classList.remove('hidden');
                 document.getElementById('result').src = framedImage;
 
-                generateQRCode(framedImage);
                 startCountdown();
 
             } catch (err) {
@@ -721,56 +717,136 @@
             throw new Error('Timeout: La transformación tardó demasiado');
         }
 
+        function printImage() {
+            const resultImg = document.getElementById('result');
+            
+            // Create print window with the image
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>McDonald's - Empleado del Mes</title>
+                    <style>
+                        @page {
+                            size: 10cm 10cm;
+                            margin: 0;
+                        }
+                        body {
+                            margin: 0;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                        }
+                        img {
+                            width: 10cm;
+                            height: 10cm;
+                            object-fit: contain;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${resultImg.src}" />
+                    <script>
+                        window.onload = () => {
+                            setTimeout(() => window.print(), 500);
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
         async function addMcDonaldsFrame(imageUrl) {
             return new Promise((resolve, reject) => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Set canvas size
+                // Set canvas size for final image
                 canvas.width = 1200;
                 canvas.height = 1200;
                 
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
+                // Load person without background
+                const personImg = new Image();
+                personImg.crossOrigin = 'anonymous';
                 
-                img.onload = () => {
-                    // Draw golden frame background
+                personImg.onload = () => {
+                    // 1. Draw golden frame background
                     ctx.fillStyle = '#FFC72C';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     
-                    // Inner red border
+                    // 2. Inner red border
                     ctx.fillStyle = '#DA291C';
                     ctx.fillRect(30, 30, canvas.width - 60, canvas.height - 60);
                     
-                    // White inner frame
+                    // 3. White content area
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(50, 130, canvas.width - 100, canvas.height - 230);
                     
-                    // Draw the AI-processed image
-                    ctx.drawImage(img, 70, 150, canvas.width - 140, canvas.height - 270);
+                    // 4. Draw McDonald's restaurant background
+                    // Solid color background for McDonald's theme
+                    ctx.fillStyle = '#FFE5B4'; // Warm beige/cream color
+                    ctx.fillRect(70, 150, canvas.width - 140, canvas.height - 270);
                     
-                    // Top bar with McDonald's branding
+                    // Add subtle McDonald's pattern
+                    ctx.fillStyle = '#FFD700';
+                    ctx.globalAlpha = 0.1;
+                    for (let i = 0; i < 10; i++) {
+                        ctx.fillRect(70 + i * 110, 150, 50, canvas.height - 270);
+                    }
+                    ctx.globalAlpha = 1.0;
+                    
+                    // 5. Draw person (centered and scaled)
+                    const personHeight = canvas.height - 350;
+                    const personWidth = (personImg.width / personImg.height) * personHeight;
+                    const personX = (canvas.width - personWidth) / 2;
+                    const personY = 200;
+                    
+                    ctx.drawImage(personImg, personX, personY, personWidth, personHeight);
+                    
+                    // 6. Draw uniform overlay (simplified representation)
+                    // Red shirt collar
+                    ctx.fillStyle = '#DA291C';
+                    ctx.globalAlpha = 0.7;
+                    const shirtY = personY + personHeight * 0.3;
+                    ctx.fillRect(personX + personWidth * 0.2, shirtY, personWidth * 0.6, personHeight * 0.7);
+                    ctx.globalAlpha = 1.0;
+                    
+                    // Yellow details
+                    ctx.fillStyle = '#FFC72C';
+                    ctx.fillRect(personX + personWidth * 0.35, shirtY + 20, personWidth * 0.3, 15);
+                    
+                    // Cap representation
+                    ctx.fillStyle = '#DA291C';
+                    ctx.beginPath();
+                    ctx.arc(personX + personWidth/2, personY + personHeight * 0.15, personWidth * 0.25, Math.PI, 0, false);
+                    ctx.fill();
+                    
+                    // 7. Top bar with branding
                     ctx.fillStyle = '#DA291C';
                     ctx.fillRect(50, 50, canvas.width - 100, 70);
                     
-                    // McDonald's golden arches (simplified)
+                    // McDonald's M logo
                     ctx.fillStyle = '#FFC72C';
                     ctx.font = 'bold 50px Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText('M', canvas.width / 2 - 200, 100);
+                    ctx.fillText('M', 150, 100);
                     
                     // "EMPLEADO DEL MES" text
                     ctx.fillStyle = '#FFC72C';
-                    ctx.font = 'bold 40px Oswald, Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('EMPLEADO DEL MES', canvas.width / 2 + 50, 100);
+                    ctx.font = 'bold 40px Arial';
+                    ctx.fillText('EMPLEADO DEL MES', canvas.width / 2 + 100, 100);
                     
-                    // Bottom McDonald's logo
+                    // 8. Bottom McDonald's branding
+                    ctx.fillStyle = '#DA291C';
+                    ctx.fillRect(50, canvas.height - 90, canvas.width - 100, 60);
+                    
                     ctx.fillStyle = '#FFC72C';
                     ctx.font = 'bold 35px Arial';
-                    ctx.fillText("McDonald's", canvas.width / 2, canvas.height - 40);
+                    ctx.fillText("McDonald's", canvas.width / 2, canvas.height - 50);
                     
-                    // Star decoration
+                    // 9. Star decorations
                     ctx.fillStyle = '#FFC72C';
                     ctx.font = '60px Arial';
                     ctx.fillText('⭐', 100, 100);
@@ -779,8 +855,8 @@
                     resolve(canvas.toDataURL('image/png', 1.0));
                 };
                 
-                img.onerror = () => reject(new Error('Failed to load image'));
-                img.src = imageUrl;
+                personImg.onerror = () => reject(new Error('Failed to load image'));
+                personImg.src = imageUrl;
             });
         }
 
