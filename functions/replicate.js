@@ -16,26 +16,34 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { action, image, predictionId } = JSON.parse(event.body);
-    const token = process.env.REPLICATE_API_TOKEN;
+    const { action, imageBase64, generationId } = JSON.parse(event.body);
+    const apiKey = process.env.LEONARDO_API_KEY;
 
-    if (!token) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Token not configured' }) };
+    if (!apiKey) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Leonardo API key not configured' }) };
     }
 
-    // Create - using remove.bg for background removal
+    // Create generation with image-to-image
     if (action === 'create') {
-      const res = await fetch('https://api.replicate.com/v1/predictions', {
+      const res = await fetch('https://cloud.leonardo.ai/api/rest/v1/generations', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'authorization': `Bearer ${apiKey}`,
+          'content-type': 'application/json'
         },
         body: JSON.stringify({
-          version: "fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",
-          input: {
-            image: image
-          }
+          prompt: "professional employee portrait, person wearing red and yellow McDonald's employee uniform with cap and name badge, inside McDonald's restaurant, professional photography, realistic, high quality",
+          negative_prompt: "cartoon, anime, drawing, painting, illustration, different person, different face, ugly, deformed, blurry",
+          modelId: "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3",
+          width: 1024,
+          height: 1024,
+          num_images: 1,
+          photoReal: false,
+          photoRealVersion: "v2",
+          presetStyle: "NONE",
+          init_image_base64: imageBase64,
+          init_strength: 0.3
         })
       });
 
@@ -43,10 +51,13 @@ exports.handler = async (event) => {
       return { statusCode: res.status, headers, body: JSON.stringify(data) };
     }
 
-    // Get
-    if (action === 'get' && predictionId) {
-      const res = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+    // Get generation result
+    if (action === 'get' && generationId) {
+      const res = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
+        headers: {
+          'accept': 'application/json',
+          'authorization': `Bearer ${apiKey}`
+        }
       });
 
       const data = await res.json();
@@ -56,7 +67,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid action' }) };
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Leonardo API Error:', error);
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
