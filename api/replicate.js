@@ -1,26 +1,23 @@
-exports.handler = async (event) => {
+export default async function handler(req, res) {
   // CORS
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { action, imageBase64, generationId, imageUrl } = JSON.parse(event.body);
+    const { action, imageBase64, generationId, imageUrl } = req.body;
     const apiKey = process.env.LEONARDO_API_KEY;
 
     if (!apiKey) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Leonardo API key not configured' }) };
+      return res.status(500).json({ error: 'Leonardo API key not configured' });
     }
 
     // Step 1: Upload image to Leonardo
@@ -44,7 +41,7 @@ exports.handler = async (event) => {
         throw new Error('Failed to get upload URL');
       }
 
-      // Convert base64 to blob and upload
+      // Convert base64 to buffer and upload
       const base64Data = imageBase64.split(',')[1];
       const binaryData = Buffer.from(base64Data, 'base64');
       
@@ -56,19 +53,15 @@ exports.handler = async (event) => {
         }
       });
 
-      return { 
-        statusCode: 200, 
-        headers, 
-        body: JSON.stringify({ 
-          imageId: uploadData.uploadInitImage.id,
-          fields: uploadData.uploadInitImage.fields 
-        }) 
-      };
+      return res.status(200).json({ 
+        imageId: uploadData.uploadInitImage.id,
+        fields: uploadData.uploadInitImage.fields 
+      });
     }
 
     // Step 2: Create generation with uploaded image
     if (action === 'create') {
-      const res = await fetch('https://cloud.leonardo.ai/api/rest/v1/generations', {
+      const genRes = await fetch('https://cloud.leonardo.ai/api/rest/v1/generations', {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -82,32 +75,32 @@ exports.handler = async (event) => {
           width: 1024,
           height: 1024,
           num_images: 1,
-          init_image_id: imageUrl, // This is the ID from upload
+          init_image_id: imageUrl,
           init_strength: 0.35
         })
       });
 
-      const data = await res.json();
-      return { statusCode: res.status, headers, body: JSON.stringify(data) };
+      const data = await genRes.json();
+      return res.status(genRes.status).json(data);
     }
 
     // Step 3: Get generation result
     if (action === 'get' && generationId) {
-      const res = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
+      const genRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
         headers: {
           'accept': 'application/json',
           'authorization': `Bearer ${apiKey}`
         }
       });
 
-      const data = await res.json();
-      return { statusCode: res.status, headers, body: JSON.stringify(data) };
+      const data = await genRes.json();
+      return res.status(genRes.status).json(data);
     }
 
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid action' }) };
+    return res.status(400).json({ error: 'Invalid action' });
 
   } catch (error) {
     console.error('Leonardo API Error:', error);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+    return res.status(500).json({ error: error.message });
   }
-};
+}
