@@ -1,38 +1,30 @@
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(request) {
-  // Only allow POST requests
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
+export default async function handler(req, res) {
   // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json',
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   // Handle OPTIONS request for CORS
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { headers });
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   try {
-    const body = await request.json();
-    const { action, image, predictionId } = body;
+    const { action, image, predictionId } = req.body;
 
     // Get API token from environment variable
     const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 
     if (!REPLICATE_API_TOKEN) {
-      return new Response(
-        JSON.stringify({ error: 'API token not configured' }),
-        { status: 500, headers }
-      );
+      res.status(500).json({ error: 'API token not configured' });
+      return;
     }
 
     const AI_PROMPT = `Professional McDonald's Employee of the Month portrait photograph. Person wearing official McDonald's red and yellow uniform with cap, name badge visible. Clean professional headshot style with McDonald's restaurant background. Golden Arches logo visible. Employee of the Month certificate style. High quality, professional lighting, corporate photography style. Square format portrait, centered composition.`;
@@ -63,7 +55,14 @@ export default async function handler(request) {
       });
 
       const data = await response.json();
-      return new Response(JSON.stringify(data), { status: response.status, headers });
+      
+      if (!response.ok) {
+        res.status(response.status).json(data);
+        return;
+      }
+      
+      res.status(200).json(data);
+      return;
     }
 
     // Get prediction status
@@ -78,18 +77,21 @@ export default async function handler(request) {
       );
 
       const data = await response.json();
-      return new Response(JSON.stringify(data), { status: response.status, headers });
+      
+      if (!response.ok) {
+        res.status(response.status).json(data);
+        return;
+      }
+      
+      res.status(200).json(data);
+      return;
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { status: 400, headers }
-    );
+    res.status(400).json({ error: 'Invalid action' });
 
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers }
-    );
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
   }
 }
+
