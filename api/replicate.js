@@ -1,46 +1,38 @@
 export default async function handler(req, res) {
-  // CORS headers
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle OPTIONS request for CORS
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
-  // Only allow POST requests
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { action, image, predictionId } = req.body;
+    const token = process.env.REPLICATE_API_TOKEN;
 
-    // Get API token from environment variable
-    const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
-
-    if (!REPLICATE_API_TOKEN) {
-      res.status(500).json({ error: 'API token not configured' });
-      return;
+    if (!token) {
+      return res.status(500).json({ error: 'API token not configured' });
     }
 
-    const AI_PROMPT = `Professional McDonald's Employee of the Month portrait photograph. Person wearing official McDonald's red and yellow uniform with cap, name badge visible. Clean professional headshot style with McDonald's restaurant background. Golden Arches logo visible. Employee of the Month certificate style. High quality, professional lighting, corporate photography style. Square format portrait, centered composition.`;
+    const prompt = "Professional McDonald's Employee of the Month portrait photograph. Person wearing official McDonald's red and yellow uniform with cap, name badge visible. Clean professional headshot style with McDonald's restaurant background. Golden Arches logo visible. Employee of the Month certificate style. High quality, professional lighting, corporate photography style. Square format portrait, centered composition.";
 
-    // Create prediction
     if (action === 'create') {
-      const response = await fetch('https://api.replicate.com/v1/predictions', {
+      const apiRes = await fetch('https://api.replicate.com/v1/predictions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${REPLICATE_API_TOKEN}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           version: "e23665f88d8f2e04ea735392cea3b8e1e4f4e25fef27f0e3f7f95c95a6f8d913",
           input: {
-            prompt: AI_PROMPT,
+            prompt: prompt,
             image: image,
             go_fast: true,
             guidance: 3.5,
@@ -54,44 +46,28 @@ export default async function handler(req, res) {
         })
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        res.status(response.status).json(data);
-        return;
-      }
-      
-      res.status(200).json(data);
-      return;
+      const data = await apiRes.json();
+      return res.status(apiRes.status).json(data);
     }
 
-    // Get prediction status
     if (action === 'get' && predictionId) {
-      const response = await fetch(
+      const apiRes = await fetch(
         `https://api.replicate.com/v1/predictions/${predictionId}`,
         {
           headers: {
-            'Authorization': `Bearer ${REPLICATE_API_TOKEN}`,
+            'Authorization': `Bearer ${token}`,
           }
         }
       );
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        res.status(response.status).json(data);
-        return;
-      }
-      
-      res.status(200).json(data);
-      return;
+      const data = await apiRes.json();
+      return res.status(apiRes.status).json(data);
     }
 
-    res.status(400).json({ error: 'Invalid action' });
+    return res.status(400).json({ error: 'Invalid action' });
 
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error:', error);
+    return res.status(500).json({ error: error.message || 'Server error' });
   }
 }
-
