@@ -674,7 +674,7 @@
         }
 
         async function pollPrediction(predictionId) {
-            const maxAttempts = 60;
+            const maxAttempts = 120; // 2 minutes timeout
             let attempts = 0;
 
             while (attempts < maxAttempts) {
@@ -695,6 +695,14 @@
                     return prediction.output[0];
                 } else if (prediction.status === 'failed') {
                     throw new Error('La transformación falló');
+                }
+
+                // Update progress message every 15 seconds
+                if (attempts % 15 === 0 && attempts > 0) {
+                    const loadingText = document.querySelector('.loading-text');
+                    if (loadingText) {
+                        loadingText.textContent = `Procesando... ${attempts} segundos`;
+                    }
                 }
 
                 await new Promise(resolve => setTimeout(resolve, 1000));
