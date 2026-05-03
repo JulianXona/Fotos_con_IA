@@ -427,8 +427,6 @@
     </style>
 </head>
 <body>
-    <button class="settings-btn" onclick="showConfig()" title="Configuración">⚙️</button>
-
     <div class="container">
         <div class="header">
             <div class="logo">McDonald's</div>
@@ -442,22 +440,8 @@
                 <div class="step" id="step3"></div>
             </div>
 
-            <!-- Config Screen -->
-            <div id="configScreen">
-                <div class="info-box">
-                    <h3>🔑 Configuración Inicial</h3>
-                    <p>Ingresá tu API token de Replicate para empezar.</p>
-                </div>
-                <input type="password" id="apiKeyInput" placeholder="r8_..." />
-                <button class="btn btn-primary" onclick="saveApiKey()">GUARDAR Y CONTINUAR</button>
-                <div class="config-note">
-                    💡 Tu token se guarda localmente en este dispositivo.<br>
-                    Conseguilo en: <a href="https://replicate.com/account/api-tokens" target="_blank">replicate.com/account/api-tokens</a>
-                </div>
-            </div>
-
             <!-- Setup Screen -->
-            <div id="setupScreen" class="hidden">
+            <div id="setupScreen">
                 <div class="info-box">
                     <h3>📸 ¡Convertite en Empleado del Mes!</h3>
                     <p>Sacate una foto y transformate en un empleado oficial de McDonald's con uniforme, gorra y tu certificado personalizado.</p>
@@ -538,16 +522,6 @@
         let stream = null;
         let capturedImage = null;
         let currentFacingMode = 'user';
-
-        // Skip config screen - API key is in Netlify environment variables
-        window.onload = function() {
-            document.getElementById('configScreen').classList.add('hidden');
-            document.getElementById('setupScreen').classList.remove('hidden');
-        };
-
-        function showConfig() {
-            alert('El API token está configurado en las variables de entorno de Netlify. No necesitás cambiarlo desde acá.');
-        }
 
         async function startCamera() {
             try {
