@@ -32,18 +32,14 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          version: "8beff3369e81422112d93b89ca01426147de542cd4684c244b673b105188fe5f",
+          version: "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
           input: {
-            prompt: "Professional McDonald's Employee of the Month portrait photograph. Person wearing official McDonald's red and yellow uniform with cap, name badge visible. Clean professional headshot style with McDonald's restaurant background. Golden Arches logo visible. Employee of the Month certificate style. High quality, professional lighting, corporate photography style. Square format portrait, centered composition.",
+            prompt: "person wearing red and yellow McDonald's employee uniform with cap and name badge, professional portrait photography, McDonald's restaurant interior background, well-lit, high quality",
             image: image,
-            go_fast: true,
-            guidance: 3,
-            num_outputs: 1,
-            aspect_ratio: "1:1",
-            output_format: "png",
-            output_quality: 80,
-            prompt_strength: 0.85,
-            num_inference_steps: 28
+            negative_prompt: "deformed face, different person, ugly, bad anatomy, blurry, low quality",
+            strength: 0.4,
+            num_inference_steps: 50,
+            guidance_scale: 7.5
           }
         })
       });
