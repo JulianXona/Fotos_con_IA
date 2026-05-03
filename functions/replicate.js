@@ -23,7 +23,7 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers, body: JSON.stringify({ error: 'Token not configured' }) };
     }
 
-    // Create
+    // Create  
     if (action === 'create') {
       const res = await fetch('https://api.replicate.com/v1/predictions', {
         method: 'POST',
@@ -32,14 +32,18 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          version: "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+          version: "2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789",
           input: {
-            prompt: "person wearing red and yellow McDonald's employee uniform with cap and name badge, professional portrait photography, McDonald's restaurant interior background, well-lit, high quality",
             image: image,
-            negative_prompt: "deformed face, different person, ugly, bad anatomy, blurry, low quality",
-            strength: 0.4,
-            num_inference_steps: 50,
-            guidance_scale: 7.5
+            prompt: "professional employee portrait photo, person wearing red and yellow McDonald's uniform with cap and name badge, inside McDonald's restaurant with Golden Arches visible, well lit, high quality photo, realistic",
+            negative_prompt: "cartoon, anime, drawing, painting, 3d render, illustration, different person, different face, ugly, deformed",
+            num_outputs: 1,
+            sdxl_weights: "protovision-xl-high-fidel",
+            scheduler: "K_EULER",
+            num_inference_steps: 30,
+            guidance_scale: 5,
+            ip_adapter_scale: 0.8,
+            controlnet_conditioning_scale: 0.8
           }
         })
       });
