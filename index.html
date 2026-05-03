@@ -608,24 +608,43 @@
             document.getElementById('processingScreen').classList.remove('hidden');
 
             try {
-                // Call Leonardo API via Netlify function
-                const response = await fetch('/.netlify/functions/replicate', {
+                // Step 1: Upload image to Leonardo
+                const uploadResponse = await fetch('/.netlify/functions/replicate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'upload',
+                        imageBase64: capturedImage
+                    })
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorData = await uploadResponse.json();
+                    throw new Error(errorData.error || 'Error subiendo imagen');
+                }
+
+                const uploadData = await uploadResponse.json();
+                
+                // Step 2: Create generation with uploaded image ID
+                const genResponse = await fetch('/.netlify/functions/replicate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         action: 'create',
-                        imageBase64: capturedImage
+                        imageUrl: uploadData.imageId
                     })
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Error en el servidor');
+                if (!genResponse.ok) {
+                    const errorData = await genResponse.json();
+                    throw new Error(errorData.error || 'Error en generación');
                 }
 
-                const generation = await response.json();
+                const generation = await genResponse.json();
                 const result = await pollLeonardo(generation.sdGenerationJob.generationId);
                 
                 // Add McDonald's frame overlay
