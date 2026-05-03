@@ -692,9 +692,18 @@
                 const prediction = await response.json();
 
                 if (prediction.status === 'succeeded') {
-                    return prediction.output[0];
+                    // InstantID returns output as array or single URL
+                    const output = prediction.output;
+                    if (Array.isArray(output)) {
+                        return output[0];
+                    } else if (typeof output === 'string') {
+                        return output;
+                    } else {
+                        throw new Error('Formato de salida inesperado');
+                    }
                 } else if (prediction.status === 'failed') {
-                    throw new Error('La transformación falló');
+                    const errorMsg = prediction.error || 'La transformación falló';
+                    throw new Error(errorMsg);
                 }
 
                 // Update progress message every 15 seconds
