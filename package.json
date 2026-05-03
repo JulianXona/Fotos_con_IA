@@ -1,0 +1,10 @@
+{
+  "name": "mcdonalds-photobooth",
+  "version": "1.0.0",
+  "description": "McDonald's Employee of the Month Photo Booth with AI transformation",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel"
+  }
+}
