@@ -35,15 +35,20 @@ exports.handler = async (event) => {
           version: "2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789",
           input: {
             image: image,
-            prompt: "professional employee portrait photo, person wearing red and yellow McDonald's uniform with cap and name badge, inside McDonald's restaurant with Golden Arches visible, well lit, high quality photo, realistic",
-            negative_prompt: "cartoon, anime, drawing, painting, 3d render, illustration, different person, different face, ugly, deformed",
+            prompt: "professional employee portrait photo, person wearing red and yellow McDonald's uniform with cap and name badge, inside McDonald's restaurant with Golden Arches visible in background, well lit, high quality photo, realistic, professional photography",
+            negative_prompt: "cartoon, anime, drawing, painting, 3d render, illustration, different person, different face, ugly, deformed, blurry, bad quality",
             num_outputs: 1,
-            sdxl_weights: "protovision-xl-high-fidel",
-            scheduler: "K_EULER",
             num_inference_steps: 30,
             guidance_scale: 5,
             ip_adapter_scale: 0.8,
-            controlnet_conditioning_scale: 0.8
+            controlnet_conditioning_scale: 0.8,
+            enable_pose_controlnet: true,
+            pose_strength: 0.4,
+            enhance_nonface_region: true,
+            sdxl_weights: "protovision-xl-high-fidel",
+            scheduler: "EulerDiscreteScheduler",
+            output_format: "png",
+            output_quality: 90
           }
         })
       });
